@@ -25,7 +25,7 @@ COPY models/ /dbt/models/
 COPY dbt_project.yml /dbt/
 
 RUN mkdir -p /opt/dbt
-COPY profile.yml /opt/dbt/profiles.yml
+COPY profiles.yml /opt/dbt/profiles.yml
 
 WORKDIR /app
 COPY dbt_runner.py /app/
