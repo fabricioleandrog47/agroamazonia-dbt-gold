@@ -86,8 +86,8 @@ jobs:
                 'sparkVersion': '3.5.2',
                 'restartPolicy': {'type': 'Never'},
                 'driver': {
-                    'cores': 1,
-                    'memory': '2g',
+                    'cores': 2,
+                    'memory': '8g',
                     'serviceAccount': 'spark-driver',
                     'nodeSelector': {'role': 'spark'},
                     'env': [
@@ -99,9 +99,9 @@ jobs:
                     ]
                 },
                 'executor': {
-                    'cores': 1,
-                    'instances': 2,
-                    'memory': '2g',
+                    'cores': 4,
+                    'instances': 4,
+                    'memory': '12g',
                     'nodeSelector': {'role': 'spark'}
                 },
                 'sparkConf': {
