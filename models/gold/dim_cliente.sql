@@ -45,26 +45,11 @@ WHERE rn = 1
 
 {% else %}
 
-WITH source_data AS (
-    SELECT
-        CPF_CNPJ_CLIFOR as ClienteCPFCNPJ,
-        NOME_CLIEFOR as ClienteDescricao
-    FROM {{ source('silver', 'fato_edi_syngenta_notas_fiscais') }}
-    WHERE CPF_CNPJ_CLIFOR IS NOT NULL
-),
-
-distinct_clientes AS (
-    SELECT DISTINCT
-        ClienteCPFCNPJ,
-        FIRST(ClienteDescricao) as ClienteDescricao
-    FROM source_data
-    GROUP BY ClienteCPFCNPJ
-)
-
 SELECT
-    ClienteCPFCNPJ,
-    ClienteDescricao,
+    CPF_CNPJ_CLIFOR as ClienteCPFCNPJ,
+    NOME_CLIEFOR as ClienteDescricao,
     current_timestamp() as data_atualizacao
-FROM distinct_clientes
+FROM delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_NOTAS_FISCAIS`
+WHERE CPF_CNPJ_CLIFOR IS NOT NULL
 
 {% endif %}

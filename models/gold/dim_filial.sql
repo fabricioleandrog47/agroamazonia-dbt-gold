@@ -55,7 +55,7 @@ SELECT
     CNPJ as FilialCNPJ,
     END_COMPLETO as FilialEndereco,
     current_timestamp() as data_atualizacao
-FROM {{ source('silver', 'dim_filial_silver') }}
+FROM delta.`s3a://brid-silver/5037/DIM_FILIAL`
 WHERE COD_FILIAL IS NOT NULL
 
 {% endif %}

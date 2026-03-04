@@ -106,7 +106,7 @@ SELECT
     COD_TRATAMENTO as FaturamentoTratamento,
     PESO_KG_SEMENTE as FaturamentoVolumeItemKG,
     current_timestamp() as data_atualizacao
-FROM {{ source('silver', 'fato_edi_syngenta_notas_fiscais') }}
+FROM delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_NOTAS_FISCAIS`
 WHERE CHAVE_NFE IS NOT NULL
 
 {% endif %}

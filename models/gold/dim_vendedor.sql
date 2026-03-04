@@ -47,29 +47,12 @@ WHERE rn = 1
 
 {% else %}
 
-WITH source_data AS (
-    SELECT
-        COD_VENDEDOR as VendedorCodigo,
-        NOME_VENDEDOR as VendedorDescricao,
-        CPF_VENDEDOR as VendedorCPF
-    FROM {{ source('silver', 'fato_edi_syngenta_notas_fiscais') }}
-    WHERE COD_VENDEDOR IS NOT NULL
-),
-
-distinct_vendedores AS (
-    SELECT DISTINCT
-        VendedorCodigo,
-        FIRST(VendedorDescricao) as VendedorDescricao,
-        FIRST(VendedorCPF) as VendedorCPF
-    FROM source_data
-    GROUP BY VendedorCodigo
-)
-
 SELECT
-    VendedorCodigo,
-    VendedorDescricao,
-    VendedorCPF,
+    COD_VENDEDOR as VendedorCodigo,
+    NOME_VENDEDOR as VendedorDescricao,
+    CPF_VENDEDOR as VendedorCPF,
     current_timestamp() as data_atualizacao
-FROM distinct_vendedores
+FROM delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_NOTAS_FISCAIS`
+WHERE COD_VENDEDOR IS NOT NULL
 
 {% endif %}

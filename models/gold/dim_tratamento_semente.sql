@@ -43,16 +43,10 @@ WHERE rn = 1
 
 {% else %}
 
-WITH source_data AS (
-    SELECT DISTINCT
-        COD_TRATAMENTO as TratamentoSementeCodigo
-    FROM {{ source('silver', 'fato_edi_syngenta_notas_fiscais') }}
-    WHERE COD_TRATAMENTO IS NOT NULL
-)
-
-SELECT
-    TratamentoSementeCodigo,
+SELECT DISTINCT
+    COD_TRATAMENTO as TratamentoSementeCodigo,
     current_timestamp() as data_atualizacao
-FROM source_data
+FROM delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_NOTAS_FISCAIS`
+WHERE COD_TRATAMENTO IS NOT NULL
 
 {% endif %}

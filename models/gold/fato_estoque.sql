@@ -54,6 +54,6 @@ SELECT
     COD_FABRICANTE as EstoqueFabricante,
     QTDE_SALDO_EMBALAGEM as EstoqueSaldo,
     current_timestamp() as data_atualizacao
-FROM {{ source('silver', 'fato_edi_syngenta_estoque') }}
+FROM delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_ESTOQUE`
 
 {% endif %}

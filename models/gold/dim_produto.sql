@@ -47,29 +47,12 @@ WHERE rn = 1
 
 {% else %}
 
-WITH source_data AS (
-    SELECT
-        COD_PRODUTO as ProdutoCodigo,
-        DESC_PRODUTO as ProdutoDescricao,
-        DESC_PRODUTO_PAI as ProdutoTipo
-    FROM {{ source('silver', 'fato_edi_syngenta_notas_fiscais') }}
-    WHERE COD_PRODUTO IS NOT NULL
-),
-
-distinct_produtos AS (
-    SELECT DISTINCT
-        ProdutoCodigo,
-        FIRST(ProdutoDescricao) as ProdutoDescricao,
-        FIRST(ProdutoTipo) as ProdutoTipo
-    FROM source_data
-    GROUP BY ProdutoCodigo
-)
-
 SELECT
-    ProdutoCodigo,
-    ProdutoDescricao,
-    ProdutoTipo,
+    COD_PRODUTO as ProdutoCodigo,
+    DESC_PRODUTO as ProdutoDescricao,
+    DESC_PRODUTO_PAI as ProdutoTipo,
     current_timestamp() as data_atualizacao
-FROM distinct_produtos
+FROM delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_NOTAS_FISCAIS`
+WHERE COD_PRODUTO IS NOT NULL
 
 {% endif %}

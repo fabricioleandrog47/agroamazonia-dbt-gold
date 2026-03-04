@@ -43,16 +43,10 @@ WHERE rn = 1
 
 {% else %}
 
-WITH source_data AS (
-    SELECT DISTINCT
-        LOTE_INTERNO as LoteNumero
-    FROM {{ source('silver', 'fato_edi_syngenta_notas_fiscais') }}
-    WHERE LOTE_INTERNO IS NOT NULL
-)
-
-SELECT
-    LoteNumero,
+SELECT DISTINCT
+    LOTE_INTERNO as LoteNumero,
     current_timestamp() as data_atualizacao
-FROM source_data
+FROM delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_NOTAS_FISCAIS`
+WHERE LOTE_INTERNO IS NOT NULL
 
 {% endif %}
