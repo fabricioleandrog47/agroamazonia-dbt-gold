@@ -1,0 +1,111 @@
+version: 2
+
+models:
+  - name: fato_pedido
+    description: "Fato de pedidos - join entre pedido e pedido_item"
+    columns:
+      - name: pedido_id
+        description: "ID do pedido"
+        tests:
+          - not_null
+      - name: item_id
+        description: "ID do item"
+        tests:
+          - not_null
+
+  - name: dim_cliente
+    description: "Dimensão de clientes derivada da tabela de notas fiscais"
+    columns:
+      - name: ClienteCPFCNPJ
+        description: "CPF/CNPJ do cliente"
+        tests:
+          - not_null
+          - unique
+      - name: ClienteDescricao
+        description: "Nome do cliente"
+
+  - name: dim_vendedor
+    description: "Dimensão de vendedores derivada da tabela de notas fiscais"
+    columns:
+      - name: VendedorCodigo
+        description: "Código do vendedor"
+        tests:
+          - not_null
+          - unique
+      - name: VendedorDescricao
+        description: "Nome do vendedor"
+      - name: VendedorCPF
+        description: "CPF do vendedor"
+
+  - name: dim_produto
+    description: "Dimensão de produtos derivada da tabela de notas fiscais"
+    columns:
+      - name: ProdutoCodigo
+        description: "Código do produto"
+        tests:
+          - not_null
+          - unique
+      - name: ProdutoDescricao
+        description: "Descrição do produto"
+      - name: ProdutoTipo
+        description: "Tipo/categoria do produto"
+
+  - name: fato_faturamento
+    description: "Fato de faturamento derivado da tabela de notas fiscais"
+    columns:
+      - name: FaturamentoChaveNF
+        description: "Chave da nota fiscal"
+        tests:
+          - not_null
+          - unique
+      - name: FaturamentoData
+        description: "Data de emissão da nota fiscal"
+      - name: FaturamentoValorItem
+        description: "Valor líquido do item"
+
+  - name: dim_lote
+    description: "Dimensão de lotes derivada da tabela de notas fiscais"
+    columns:
+      - name: LoteNumero
+        description: "Número do lote interno"
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_tratamento_semente
+    description: "Dimensão de tratamento de sementes derivada da tabela de notas fiscais"
+    columns:
+      - name: TratamentoSementeCodigo
+        description: "Código do tratamento de semente"
+        tests:
+          - not_null
+          - unique
+
+  - name: fato_estoque
+    description: "Fato de estoque derivado da tabela de estoque"
+    columns:
+      - name: EstoqueFilial
+        description: "Código da filial"
+        tests:
+          - not_null
+      - name: EstoqueProduto
+        description: "Código do produto"
+        tests:
+          - not_null
+      - name: EstoqueSaldo
+        description: "Saldo em estoque"
+
+  - name: dim_filial
+    description: "Dimensão de filiais"
+    columns:
+      - name: FilialCodigo
+        description: "Código da filial"
+        tests:
+          - not_null
+          - unique
+      - name: FilialDescricao
+        description: "Descrição da filial"
+      - name: FilialCNPJ
+        description: "CNPJ da filial"
+      - name: FilialEndereco
+        description: "Endereço completo da filial"

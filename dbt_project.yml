@@ -1,0 +1,21 @@
+name: 'spark_dbt'
+version: '1.0.0'
+config-version: 2
+
+profile: 'spark_dbt'
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  spark_dbt:
+    +materialized: table
+    control:
+      +materialized: table
+    gold:
+      +materialized: incremental

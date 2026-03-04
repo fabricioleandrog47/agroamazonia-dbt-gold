@@ -1,0 +1,238 @@
+name: Build and Deploy DBT Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: agroamazonia-gold-dbt
+  DAG_NAME: dbt_agroamazonia_gold_pipeline_spark_operator
+
+jobs:
+  notify-teams:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Send Teams Notification
+      run: |
+        # Capturar informações do commit
+        COMMIT_MSG="$(git log -1 --pretty=format:'%s')"
+        FILES_CHANGED="$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | head -5 | tr '\n' ', ' | sed 's/,$//')"
+        
+        python3 scripts/teams_approval.py
+      env:
+        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        ACTION: request_approval
+        PIPELINE_NAME: dbt-agroamazonia
+        COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        FILES_CHANGED: "$FILES_CHANGED"
+
+  request-approval:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Manual Approval Required
+      id: approval
+      uses: trstringer/manual-approval@v1
+      with:
+        secret: ${{ github.TOKEN }}
+        approvers: ${{ github.actor }}
+        minimum-approvals: 1
+        issue-title: "🚀 Deploy para Produção - Aprovação Necessária"
+        issue-body: |
+          **Commit:** ${{ github.sha }}
+          **Autor:** ${{ github.actor }}
+          **Branch:** ${{ github.ref_name }}
+          **Mensagem:** ${{ github.event.head_commit.message }}
+          
+          ⚠️ **ATENÇÃO: Deploy para PRODUÇÃO**
+          
+          **Para aprovar:** Comente `/approve`
+          **Para rejeitar:** Comente `/deny`
+        exclude-workflow-initiator-as-approver: false
+
+  build-and-deploy:
+    needs: [notify-teams, request-approval]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    - name: Generate Airflow DAG
+      run: |
+        cat > dag_${{ env.DAG_NAME }}.py << 'EOF'
+        from datetime import datetime, timedelta
+        from airflow import DAG
+        from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import SparkKubernetesOperator
+        from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
+        from airflow.providers.cncf.kubernetes.secret import Secret
+        import yaml
+
+        default_args = {
+            'owner': 'data-team',
+            'depends_on_past': False,
+            'start_date': datetime(2025, 1, 1),
+            'email_on_failure': False,
+            'email_on_retry': False,
+            'retries': 1,
+            'retry_delay': timedelta(minutes=5),
+        }
+
+        dag = DAG(
+            '${{ env.DAG_NAME }}',
+            default_args=default_args,
+            description='DBT EKS Processing Pipeline',
+            schedule='@daily',
+            catchup=False,
+            tags=['dbt', 'spark', 'eks'],
+        )
+
+        spark_application = {
+            'apiVersion': 'sparkoperator.k8s.io/v1beta2',
+            'kind': 'SparkApplication',
+            'metadata': {
+                'name': 'dbt-run-{{ ds_nodash | lower }}-{{ ts_nodash | lower }}',
+                'namespace': 'default'
+            },
+            'spec': {
+                'type': 'Python',
+                'mode': 'cluster',
+                'image': '${{ steps.build-image.outputs.image }}',
+                'imagePullPolicy': 'Always',
+                'imagePullSecrets': ['ecr-secret'],
+                'mainApplicationFile': 'local:///app/dbt_runner.py',
+                'sparkVersion': '3.5.2',
+                'restartPolicy': {'type': 'Never'},
+                'driver': {
+                    'cores': 1,
+                    'memory': '2g',
+                    'serviceAccount': 'spark-driver',
+                    'nodeSelector': {'role': 'spark'},
+                    'env': [
+                        {'name': 'CLIENTE_ID', 'value': '${{ secrets.CLIENTE_ID }}'},
+                        {'name': 'AWS_REGION', 'value': 'sa-east-1'},
+                        {'name': 'HOME', 'value': '/tmp'},
+                        {'name': 'AWS_ACCESS_KEY_ID', 'value': '${{ secrets.AWS_ACCESS_KEY_ID }}'},
+                        {'name': 'AWS_SECRET_ACCESS_KEY', 'value': '${{ secrets.AWS_SECRET_ACCESS_KEY }}'}
+                    ]
+                },
+                'executor': {
+                    'cores': 1,
+                    'instances': 2,
+                    'memory': '2g',
+                    'nodeSelector': {'role': 'spark'}
+                },
+                'sparkConf': {
+                    'spark.sql.warehouse.dir': 's3a://brid-datawarehouse-spark/warehouse/${{ secrets.CLIENTE_ID }}',
+                    'spark.kubernetes.file.upload.path': 'file:///tmp/spark-uploads',
+                    'spark.sql.extensions': 'io.delta.sql.DeltaSparkSessionExtension',
+                    'spark.sql.catalog.spark_catalog': 'org.apache.spark.sql.delta.catalog.DeltaCatalog',
+                    'spark.hadoop.fs.s3a.impl': 'org.apache.hadoop.fs.s3a.S3AFileSystem',
+                    'spark.hadoop.fs.s3a.endpoint': 's3.sa-east-1.amazonaws.com',
+                    'spark.hadoop.fs.s3a.path.style.access': 'true',
+                    'spark.hadoop.fs.s3a.connection.ssl.enabled': 'false',
+                    'spark.kubernetes.executor.deleteOnTermination': 'true',
+                    'spark.executor.heartbeatInterval': '60s',
+                    'spark.network.timeout': '800s',
+                    'spark.hadoop.fs.s3a.access.key': '${{ secrets.AWS_ACCESS_KEY_ID }}',
+                    'spark.hadoop.fs.s3a.secret.key': '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+                }
+            }
+        }
+
+        spark_yaml = yaml.dump(spark_application)
+        
+        spark_task = SparkKubernetesOperator(
+            task_id='dbt_run',
+            namespace='default',
+            application_file=spark_yaml,
+            kubernetes_conn_id='kubernetes_default',
+            dag=dag,
+        )
+        
+        monitor_task = KubernetesPodOperator(
+            task_id='monitor_dbt_completion',
+            name='dbt-monitor',
+            namespace='default',
+            image='bitnami/kubectl:latest',
+            cmds=['sh', '-c'],
+            arguments=[
+                'kubectl wait --for=jsonpath="{.status.applicationState.state}"=COMPLETED sparkapplication/dbt-run-{{ ds_nodash | lower }}-{{ ts_nodash | lower }} --timeout=7200s'
+            ],
+            service_account_name='spark-driver',
+            dag=dag,
+        )
+
+       
+
+        spark_task >> monitor_task 
+        EOF
+
+    - name: Upload DAG to S3
+      run: |
+        aws s3 cp dag_${{ env.DAG_NAME }}.py s3://brid-airflow-dags/dags/
+        
+    - name: Generate and Upload DBT Docs
+      run: |
+        # Instalar DBT temporariamente
+        pip install dbt-spark[session] boto3
+        
+        # Criar diretório profiles
+        mkdir -p ~/.dbt
+        cp profile.yml ~/.dbt/profiles.yml
+        
+        # Gerar documentação DBT
+        dbt docs generate --target docs --vars "cliente_id: ${{ secrets.CLIENTE_ID }}"
+        
+        # Upload docs para S3
+        aws s3 sync target/ s3://brid-dbt-docs/${{ secrets.CLIENTE_ID }}/ --delete
+        
+        # Atualizar índice principal
+        python3 scripts/update_docs_index.py
+        
+        echo "Documentação disponível em: http://a05c0098cda7a485aa23c0a231aa4f57-1545752749.us-east-1.elb.amazonaws.com/${{ secrets.CLIENTE_ID }}/"
+        
+    - name: Send Success Notification
+      if: success()
+      run: |
+        python3 scripts/teams_approval.py
+      env:
+        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        ACTION: success
+        
+    - name: Send Failure Notification
+      if: failure()
+      run: |
+        python3 scripts/teams_approval.py
+      env:
+        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        ACTION: failure

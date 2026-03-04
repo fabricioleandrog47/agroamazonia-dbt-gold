@@ -1,0 +1,22 @@
+version: 2
+
+sources:
+
+
+  - name: silver
+    schema: cliente_5037
+    tables:
+      - name: fato_edi_syngenta_notas_fiscais
+        meta:
+          external_location: "s3a://brid-silver/5037/FATO_EDI_SYNGENTA_NOTAS_FISCAIS"
+          file_format: delta
+      
+      - name: fato_edi_syngenta_estoque
+        meta:
+          external_location: "s3a://brid-silver/5037/FATO_EDI_SYNGENTA_ESTOQUE"
+          file_format: delta
+      
+      - name: dim_filial_silver
+        meta:
+          external_location: "s3a://brid-silver/5037/DIM_FILIAL"
+          file_format: delta

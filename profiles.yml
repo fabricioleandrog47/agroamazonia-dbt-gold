@@ -1,0 +1,16 @@
+spark_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: spark
+      method: thrift
+      host: localhost
+      port: 10000
+      schema: cliente_5037
+      connect_timeout: 60
+      connect_retries: 5
+    prod:
+      type: spark
+      method: session
+      schema: default
+      host: NA
