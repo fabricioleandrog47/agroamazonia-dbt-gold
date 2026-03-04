@@ -14,3 +14,9 @@ spark_dbt:
       method: session
       schema: default
       host: NA
+    docs:
+      type: spark
+      method: session
+      schema: cliente_{{ var('cliente_id', 'juca') }}
+      host: NA
+

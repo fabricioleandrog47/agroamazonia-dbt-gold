@@ -208,7 +208,7 @@ jobs:
         
         # Criar diretório profiles
         mkdir -p ~/.dbt
-        cp profile.yml ~/.dbt/profiles.yml
+        cp profiles.yml ~/.dbt/profiles.yml
         
         # Gerar documentação DBT
         dbt docs generate --target docs --vars "cliente_id: ${{ secrets.CLIENTE_ID }}"
