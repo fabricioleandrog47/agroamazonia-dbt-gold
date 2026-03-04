@@ -1,5 +1,5 @@
 spark_dbt:
-  target: dev
+  target: prod
   outputs:
     dev:
       type: spark
