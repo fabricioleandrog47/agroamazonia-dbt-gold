@@ -33,7 +33,7 @@ WITH cdf_data AS (
         _change_type,
         _commit_version,
         ROW_NUMBER() OVER (PARTITION BY COD_FILIAL, COD_PRODUTO, COD_FABRICANTE ORDER BY _commit_version DESC) as rn
-    FROM table_changes('cliente_5037.fato_edi_syngenta_estoque', {{ last_version }})
+    FROM table_changes('delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_ESTOQUE`', {{ last_version }})
     WHERE _change_type IN ('insert', 'update_postimage')
 )
 

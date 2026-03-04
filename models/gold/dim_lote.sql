@@ -30,7 +30,7 @@ WITH cdf_data AS (
         _change_type,
         _commit_version,
         ROW_NUMBER() OVER (PARTITION BY LOTE_INTERNO ORDER BY _commit_version DESC) as rn
-    FROM table_changes('cliente_5037.fato_edi_syngenta_notas_fiscais', {{ last_version }})
+    FROM table_changes('delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_NOTAS_FISCAIS`', {{ last_version }})
     WHERE _change_type IN ('insert', 'update_postimage')
         AND LOTE_INTERNO IS NOT NULL
 )
