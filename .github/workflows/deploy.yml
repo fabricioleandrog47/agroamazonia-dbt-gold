@@ -10,54 +10,7 @@ env:
   DAG_NAME: dbt_agroamazonia_gold_pipeline_spark_operator
 
 jobs:
-  notify-teams:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Send Teams Notification
-      run: |
-        # Capturar informações do commit
-        COMMIT_MSG="$(git log -1 --pretty=format:'%s')"
-        FILES_CHANGED="$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | head -5 | tr '\n' ', ' | sed 's/,$//')"
-        
-        python3 scripts/teams_approval.py
-      env:
-        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
-        ACTION: request_approval
-        PIPELINE_NAME: dbt-agroamazonia
-        COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-        FILES_CHANGED: "$FILES_CHANGED"
-
-  request-approval:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Manual Approval Required
-      id: approval
-      uses: trstringer/manual-approval@v1
-      with:
-        secret: ${{ github.TOKEN }}
-        approvers: ${{ github.actor }}
-        minimum-approvals: 1
-        issue-title: "🚀 Deploy para Produção - Aprovação Necessária"
-        issue-body: |
-          **Commit:** ${{ github.sha }}
-          **Autor:** ${{ github.actor }}
-          **Branch:** ${{ github.ref_name }}
-          **Mensagem:** ${{ github.event.head_commit.message }}
-          
-          ⚠️ **ATENÇÃO: Deploy para PRODUÇÃO**
-          
-          **Para aprovar:** Comente `/approve`
-          **Para rejeitar:** Comente `/deny`
-        exclude-workflow-initiator-as-approver: false
-
   build-and-deploy:
-    needs: [notify-teams, request-approval]
     runs-on: ubuntu-latest
     
     steps:
@@ -220,19 +173,3 @@ jobs:
         python3 scripts/update_docs_index.py
         
         echo "Documentação disponível em: http://a05c0098cda7a485aa23c0a231aa4f57-1545752749.us-east-1.elb.amazonaws.com/${{ secrets.CLIENTE_ID }}/"
-        
-    - name: Send Success Notification
-      if: success()
-      run: |
-        python3 scripts/teams_approval.py
-      env:
-        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
-        ACTION: success
-        
-    - name: Send Failure Notification
-      if: failure()
-      run: |
-        python3 scripts/teams_approval.py
-      env:
-        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
-        ACTION: failure
