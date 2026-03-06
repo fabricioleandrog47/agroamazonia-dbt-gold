@@ -1,0 +1,143 @@
+{
+  "redshift": {
+    "host": "${REDSHIFT_HOST}",
+    "port": 5439,
+    "database": "${REDSHIFT_DATABASE}",
+    "user": "${REDSHIFT_USER}",
+    "password": "${REDSHIFT_PASSWORD}",
+    "iam_role": "${REDSHIFT_IAM_ROLE}"
+  },
+  "s3": {
+    "staging_bucket": "brid-datawarehouse-spark",
+    "staging_prefix": "redshift-staging"
+  },
+  "tables": [
+    {
+      "name": "dim_cliente",
+      "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/dim_cliente",
+      "redshift_schema": "gold_5037",
+      "redshift_table": "dim_cliente",
+      "primary_keys": ["ClienteCPFCNPJ"],
+      "incremental_column": "data_atualizacao",
+      "columns": {
+        "ClienteCPFCNPJ": "VARCHAR(50)",
+        "ClienteDescricao": "VARCHAR(500)",
+        "data_atualizacao": "TIMESTAMP"
+      }
+    },
+    {
+      "name": "dim_vendedor",
+      "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/dim_vendedor",
+      "redshift_schema": "gold_5037",
+      "redshift_table": "dim_vendedor",
+      "primary_keys": ["VendedorCodigo"],
+      "incremental_column": "data_atualizacao",
+      "columns": {
+        "VendedorCodigo": "VARCHAR(50)",
+        "VendedorDescricao": "VARCHAR(500)",
+        "VendedorCPF": "VARCHAR(20)",
+        "data_atualizacao": "TIMESTAMP"
+      }
+    },
+    {
+      "name": "dim_produto",
+      "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/dim_produto",
+      "redshift_schema": "gold_5037",
+      "redshift_table": "dim_produto",
+      "primary_keys": ["ProdutoCodigo"],
+      "incremental_column": "data_atualizacao",
+      "columns": {
+        "ProdutoCodigo": "VARCHAR(50)",
+        "ProdutoDescricao": "VARCHAR(500)",
+        "ProdutoTipo": "VARCHAR(500)",
+        "data_atualizacao": "TIMESTAMP"
+      }
+    },
+    {
+      "name": "dim_lote",
+      "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/dim_lote",
+      "redshift_schema": "gold_5037",
+      "redshift_table": "dim_lote",
+      "primary_keys": ["LoteNumero"],
+      "incremental_column": "data_atualizacao",
+      "columns": {
+        "LoteNumero": "VARCHAR(100)",
+        "data_atualizacao": "TIMESTAMP"
+      }
+    },
+    {
+      "name": "dim_tratamento_semente",
+      "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/dim_tratamento_semente",
+      "redshift_schema": "gold_5037",
+      "redshift_table": "dim_tratamento_semente",
+      "primary_keys": ["TratamentoSementeCodigo"],
+      "incremental_column": "data_atualizacao",
+      "columns": {
+        "TratamentoSementeCodigo": "VARCHAR(50)",
+        "data_atualizacao": "TIMESTAMP"
+      }
+    },
+    {
+      "name": "dim_filial",
+      "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/dim_filial",
+      "redshift_schema": "gold_5037",
+      "redshift_table": "dim_filial",
+      "primary_keys": ["FilialCodigo"],
+      "incremental_column": "data_atualizacao",
+      "columns": {
+        "FilialCodigo": "VARCHAR(50)",
+        "FilialDescricao": "VARCHAR(500)",
+        "FilialCNPJ": "VARCHAR(20)",
+        "FilialEndereco": "VARCHAR(1000)",
+        "data_atualizacao": "TIMESTAMP"
+      }
+    },
+    {
+      "name": "fato_faturamento",
+      "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/fato_faturamento",
+      "redshift_schema": "gold_5037",
+      "redshift_table": "fato_faturamento",
+      "primary_keys": ["FaturamentoChaveNF"],
+      "incremental_column": "data_atualizacao",
+      "columns": {
+        "FaturamentoChaveNF": "VARCHAR(100)",
+        "FaturamentoFilial": "VARCHAR(50)",
+        "FaturamentoFabricante": "VARCHAR(50)",
+        "FaturamentoNumeroNF": "VARCHAR(50)",
+        "FaturamentoSerieNF": "VARCHAR(10)",
+        "FaturamentoCliente": "VARCHAR(50)",
+        "FaturamentoCFOP": "VARCHAR(10)",
+        "FaturamentoData": "DATE",
+        "FaturamentoProduto": "VARCHAR(50)",
+        "FaturamentoOperacao": "VARCHAR(10)",
+        "FaturamentoMunicipioIBGE": "VARCHAR(20)",
+        "FaturamentoVendedor": "VARCHAR(50)",
+        "FaturamentoValorItem": "DECIMAL(18,2)",
+        "FaturamentoVolumeItem": "DECIMAL(18,4)",
+        "FaturamentoValorBrutoItem": "DECIMAL(18,2)",
+        "FaturamentoCancelado": "VARCHAR(10)",
+        "FaturamentoUnidadeMedida": "VARCHAR(10)",
+        "FaturamentoValorConversao": "DECIMAL(18,6)",
+        "FaturamentoLote": "VARCHAR(100)",
+        "FaturamentoTratamento": "VARCHAR(50)",
+        "FaturamentoVolumeItemKG": "DECIMAL(18,4)",
+        "data_atualizacao": "TIMESTAMP"
+      }
+    },
+    {
+      "name": "fato_estoque",
+      "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/fato_estoque",
+      "redshift_schema": "gold_5037",
+      "redshift_table": "fato_estoque",
+      "primary_keys": ["EstoqueFilial", "EstoqueProduto", "EstoqueFabricante"],
+      "incremental_column": "data_atualizacao",
+      "columns": {
+        "EstoqueFilial": "VARCHAR(50)",
+        "EstoqueProduto": "VARCHAR(50)",
+        "EstoqueFabricante": "VARCHAR(50)",
+        "EstoqueSaldo": "DECIMAL(18,4)",
+        "data_atualizacao": "TIMESTAMP"
+      }
+    }
+  ]
+}
