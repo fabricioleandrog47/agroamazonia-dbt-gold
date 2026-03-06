@@ -53,17 +53,15 @@ CREATE TABLE IF NOT EXISTS {schema}.{table}_staging (
 
 def merge_query(schema, table, primary_keys, columns):
     """Gera query de MERGE"""
-    pk_join = " AND ".join([f"target.{pk} = staging.{pk}" for pk in primary_keys])
-    update_set = ", ".join([f"{col} = staging.{col}" for col in columns.keys() if col not in primary_keys])
+    pk_join = " AND ".join([f"{schema}.{table}.{pk} = {schema}.{table}_staging.{pk}" for pk in primary_keys])
     insert_cols = ", ".join(columns.keys())
-    insert_vals = ", ".join([f"staging.{col}" for col in columns.keys()])
     
     return f"""
 BEGIN TRANSACTION;
 
 -- Deletar registros que serão atualizados
 DELETE FROM {schema}.{table}
-USING {schema}.{table}_staging staging
+USING {schema}.{table}_staging
 WHERE {pk_join};
 
 -- Inserir novos e atualizados
