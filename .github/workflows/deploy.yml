@@ -145,9 +145,82 @@ jobs:
             dag=dag,
         )
 
-       
+        redshift_secrets = [
+            Secret('env', 'REDSHIFT_HOST', 'redshift-credentials', 'host'),
+            Secret('env', 'REDSHIFT_IAM_ROLE', 'redshift-credentials', 'iam-role'),
+            Secret('env', 'REDSHIFT_DATABASE', 'redshift-credentials', 'database'),
+            Secret('env', 'REDSHIFT_USER', 'redshift-credentials', 'user'),
+            Secret('env', 'REDSHIFT_PASSWORD', 'redshift-credentials', 'password'),
+        ]
 
-        spark_task >> monitor_task 
+        load_redshift_spark = {
+            'apiVersion': 'sparkoperator.k8s.io/v1beta2',
+            'kind': 'SparkApplication',
+            'metadata': {
+                'name': 'load-redshift-{{ ds_nodash | lower }}-{{ ts_nodash | lower }}',
+                'namespace': 'default'
+            },
+            'spec': {
+                'type': 'Python',
+                'mode': 'cluster',
+                'image': '${{ steps.build-image.outputs.image }}',
+                'imagePullPolicy': 'Always',
+                'imagePullSecrets': ['ecr-secret'],
+                'mainApplicationFile': 'local:///app/scripts/sync_gold_to_redshift.py',
+                'sparkVersion': '3.5.2',
+                'restartPolicy': {'type': 'Never'},
+                'driver': {
+                    'cores': 2,
+                    'memory': '8g',
+                    'serviceAccount': 'spark-driver',
+                    'nodeSelector': {'role': 'spark'},
+                    'envVars': {
+                        'CLIENTE_ID': '${{ secrets.CLIENTE_ID }}',
+                        'AWS_REGION': 'sa-east-1',
+                        'HOME': '/tmp',
+                        'AWS_ACCESS_KEY_ID': '${{ secrets.AWS_ACCESS_KEY_ID }}',
+                        'AWS_SECRET_ACCESS_KEY': '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+                    },
+                    'envSecretKeyRefs': {
+                        'REDSHIFT_HOST': {'name': 'redshift-credentials', 'key': 'host'},
+                        'REDSHIFT_IAM_ROLE': {'name': 'redshift-credentials', 'key': 'iam-role'},
+                        'REDSHIFT_DATABASE': {'name': 'redshift-credentials', 'key': 'database'},
+                        'REDSHIFT_USER': {'name': 'redshift-credentials', 'key': 'user'},
+                        'REDSHIFT_PASSWORD': {'name': 'redshift-credentials', 'key': 'password'}
+                    }
+                },
+                'executor': {
+                    'cores': 4,
+                    'instances': 4,
+                    'memory': '12g',
+                    'nodeSelector': {'role': 'spark'}
+                },
+                'sparkConf': {
+                    'spark.kubernetes.file.upload.path': 'file:///tmp/spark-uploads',
+                    'spark.sql.extensions': 'io.delta.sql.DeltaSparkSessionExtension',
+                    'spark.sql.catalog.spark_catalog': 'org.apache.spark.sql.delta.catalog.DeltaCatalog',
+                    'spark.hadoop.fs.s3a.impl': 'org.apache.hadoop.fs.s3a.S3AFileSystem',
+                    'spark.hadoop.fs.s3a.endpoint': 's3.sa-east-1.amazonaws.com',
+                    'spark.hadoop.fs.s3a.path.style.access': 'true',
+                    'spark.hadoop.fs.s3a.connection.ssl.enabled': 'false',
+                    'spark.kubernetes.executor.deleteOnTermination': 'true',
+                    'spark.hadoop.fs.s3a.access.key': '${{ secrets.AWS_ACCESS_KEY_ID }}',
+                    'spark.hadoop.fs.s3a.secret.key': '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+                }
+            }
+        }
+
+        load_redshift_yaml = yaml.dump(load_redshift_spark)
+        
+        load_redshift_task = SparkKubernetesOperator(
+            task_id='sync_gold_to_redshift',
+            namespace='default',
+            application_file=load_redshift_yaml,
+            kubernetes_conn_id='kubernetes_default',
+            dag=dag,
+        )
+
+        spark_task >> monitor_task >> load_redshift_task 
         EOF
 
     - name: Upload DAG to S3
