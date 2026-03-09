@@ -114,7 +114,10 @@ def process_table(spark, cursor, conn, config, table_config):
         print("✓ Nenhum dado novo")
         return
     
-    # 5. Exportar para staging S3
+    # 5. Selecionar apenas colunas definidas no config (evita colunas extras)
+    df = df.select(*columns.keys())
+    
+    # 6. Exportar para staging S3
     staging_path_s3a = f"s3a://{config['s3']['staging_bucket']}/{config['s3']['staging_prefix']}/{schema}/{table}"
     staging_path_s3 = f"s3://{config['s3']['staging_bucket']}/{config['s3']['staging_prefix']}/{schema}/{table}"
     
@@ -124,7 +127,7 @@ def process_table(spark, cursor, conn, config, table_config):
     # 6. COPY para staging
     print("Copiando para Redshift staging...")
     copy_query = f"""
-COPY {schema}.{table}_staging
+COPY {schema}.{table}_staging ({', '.join(columns.keys())})
 FROM '{staging_path_s3}'
 IAM_ROLE '{config['redshift']['iam_role']}'
 FORMAT AS PARQUET
@@ -132,7 +135,7 @@ FORMAT AS PARQUET
     cursor.execute(copy_query)
     conn.commit()
     
-    # 7. MERGE
+    # 8. MERGE
     print("Executando MERGE...")
     cursor.execute(merge_query(schema, table, pk, columns))
     conn.commit()
