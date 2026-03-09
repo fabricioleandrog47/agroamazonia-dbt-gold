@@ -5,6 +5,8 @@ from datetime import datetime
 import boto3
 import psycopg2
 from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+from pyspark.sql.types import DecimalType, StringType, DateType, TimestampType
 from string import Template
 from dotenv import load_dotenv
 
@@ -117,6 +119,18 @@ def process_table(spark, cursor, conn, config, table_config):
     # 5. Selecionar apenas colunas definidas no config (evita colunas extras)
     df = df.select(*columns.keys())
     
+    # 5.1. Converter tipos para compatibilidade com Redshift
+    for col_name, col_type in columns.items():
+        print(f"Convertendo {col_name} para {col_type}")
+        if 'DECIMAL' in col_type:
+            df = df.withColumn(col_name, F.col(col_name).cast(DecimalType(18, 4)))
+        elif 'VARCHAR' in col_type:
+            df = df.withColumn(col_name, F.col(col_name).cast(StringType()))
+        elif col_type == 'DATE':
+            df = df.withColumn(col_name, F.col(col_name).cast(DateType()))
+        elif col_type == 'TIMESTAMP':
+            df = df.withColumn(col_name, F.col(col_name).cast(TimestampType()))
+    
     # 6. Exportar para staging S3
     staging_path_s3a = f"s3a://{config['s3']['staging_bucket']}/{config['s3']['staging_prefix']}/{schema}/{table}"
     staging_path_s3 = f"s3://{config['s3']['staging_bucket']}/{config['s3']['staging_prefix']}/{schema}/{table}"
@@ -132,6 +146,9 @@ FROM '{staging_path_s3}'
 IAM_ROLE '{config['redshift']['iam_role']}'
 FORMAT AS PARQUET
 """
+
+    print('query')
+    print(copy_query)
     cursor.execute(copy_query)
     conn.commit()
     
