@@ -122,13 +122,20 @@ def process_table(spark, cursor, conn, config, table_config):
     # 5.1. Converter tipos para compatibilidade com Redshift
     for col_name, col_type in columns.items():
         print(f"Convertendo {col_name} para {col_type}")
-        if 'DECIMAL' in col_type:
-            df = df.withColumn(col_name, F.col(col_name).cast(DecimalType(18, 4)))
-        elif 'VARCHAR' in col_type:
+        if 'DECIMAL' in col_type.upper():
+            # Extrair precisão do tipo DECIMAL(18,2) ou usar padrão
+            if '(' in col_type:
+                precision = col_type.split('(')[1].split(')')[0].split(',')
+                p = int(precision[0])
+                s = int(precision[1]) if len(precision) > 1 else 0
+                df = df.withColumn(col_name, F.col(col_name).cast(DecimalType(p, s)))
+            else:
+                df = df.withColumn(col_name, F.col(col_name).cast(DecimalType(18, 4)))
+        elif 'VARCHAR' in col_type.upper():
             df = df.withColumn(col_name, F.col(col_name).cast(StringType()))
-        elif col_type == 'DATE':
+        elif col_type.upper() == 'DATE':
             df = df.withColumn(col_name, F.col(col_name).cast(DateType()))
-        elif col_type == 'TIMESTAMP':
+        elif col_type.upper() == 'TIMESTAMP':
             df = df.withColumn(col_name, F.col(col_name).cast(TimestampType()))
     
     # 6. Exportar para staging S3
@@ -146,9 +153,6 @@ FROM '{staging_path_s3}'
 IAM_ROLE '{config['redshift']['iam_role']}'
 FORMAT AS PARQUET
 """
-
-    print('query')
-    print(copy_query)
     cursor.execute(copy_query)
     conn.commit()
     
