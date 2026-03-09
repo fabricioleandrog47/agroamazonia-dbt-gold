@@ -115,7 +115,7 @@
         "FaturamentoValorItem": "DECIMAL(18,2)",
         "FaturamentoVolumeItem": "DECIMAL(18,4)",
         "FaturamentoValorBrutoItem": "DECIMAL(18,2)",
-        "FaturamentoCancelado": "VARCHAR(10)",
+        "FaturamentoCancelado": "VARCHAR(50)",
         "FaturamentoUnidadeMedida": "VARCHAR(10)",
         "FaturamentoValorConversao": "DECIMAL(18,6)",
         "FaturamentoLote": "VARCHAR(100)",
