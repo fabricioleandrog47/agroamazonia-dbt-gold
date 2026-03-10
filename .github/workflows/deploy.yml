@@ -99,9 +99,9 @@ jobs:
                     ]
                 },
                 'executor': {
-                    'cores': 4,
-                    'instances': 4,
-                    'memory': '12g',
+                    'cores': 2,
+                    'instances': 2,
+                    'memory': '8g',
                     'nodeSelector': {'role': 'spark'}
                 },
                 'sparkConf': {
@@ -190,9 +190,9 @@ jobs:
                     }
                 },
                 'executor': {
-                    'cores': 4,
-                    'instances': 4,
-                    'memory': '12g',
+                    'cores': 2,
+                    'instances': 2,
+                    'memory': '8g',
                     'nodeSelector': {'role': 'spark'}
                 },
                 'sparkConf': {

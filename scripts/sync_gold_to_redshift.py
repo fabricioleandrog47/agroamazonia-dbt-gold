@@ -38,7 +38,7 @@ def create_table_ddl(schema, table, columns, primary_keys):
     pk = f"PRIMARY KEY ({', '.join(primary_keys)})" if primary_keys else ""
     
     return f"""
-CREATE TABLE IF NOT EXISTS {schema}.{table} (
+CREATE TABLE IF NOT EXISTS "{schema}".{table} (
     {', '.join(cols)}
     {', ' + pk if pk else ''}
 )
@@ -48,31 +48,31 @@ def create_staging_ddl(schema, table, columns):
     """Gera DDL da tabela staging (sem PK)"""
     cols = [f"{col} {dtype}" for col, dtype in columns.items()]
     return f"""
-CREATE TABLE IF NOT EXISTS {schema}.{table}_staging (
+CREATE TABLE IF NOT EXISTS "{schema}".{table}_staging (
     {', '.join(cols)}
 )
 """
 
 def merge_query(schema, table, primary_keys, columns):
     """Gera query de MERGE"""
-    pk_join = " AND ".join([f"{schema}.{table}.{pk} = {schema}.{table}_staging.{pk}" for pk in primary_keys])
+    pk_join = " AND ".join([f'"{schema}".{table}.{pk} = "{schema}".{table}_staging.{pk}' for pk in primary_keys])
     insert_cols = ", ".join(columns.keys())
     
     return f"""
 BEGIN TRANSACTION;
 
 -- Deletar registros que serão atualizados
-DELETE FROM {schema}.{table}
-USING {schema}.{table}_staging
+DELETE FROM "{schema}".{table}
+USING "{schema}".{table}_staging
 WHERE {pk_join};
 
 -- Inserir novos e atualizados
-INSERT INTO {schema}.{table} ({insert_cols})
+INSERT INTO "{schema}".{table} ({insert_cols})
 SELECT {insert_cols}
-FROM {schema}.{table}_staging;
+FROM "{schema}".{table}_staging;
 
 -- Limpar staging
-TRUNCATE {schema}.{table}_staging;
+TRUNCATE "{schema}".{table}_staging;
 
 END TRANSACTION;
 """
@@ -93,7 +93,7 @@ def process_table(spark, cursor, conn, config, table_config):
     print(f"{'='*60}")
     
     # 1. Criar schema
-    cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+    cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
     conn.commit()
     
     # 2. Criar tabelas
@@ -102,7 +102,7 @@ def process_table(spark, cursor, conn, config, table_config):
     conn.commit()
     
     # 3. Buscar última atualização
-    last_update = get_last_update(cursor, schema, table, incr_col)
+    last_update = get_last_update(cursor, f'"{schema}"', table, incr_col)
     print(f"Última atualização: {last_update}")
     
     # 4. Ler dados incrementais
@@ -148,7 +148,7 @@ def process_table(spark, cursor, conn, config, table_config):
     # 6. COPY para staging
     print("Copiando para Redshift staging...")
     copy_query = f"""
-COPY {schema}.{table}_staging ({', '.join(columns.keys())})
+COPY "{schema}".{table}_staging ({', '.join(columns.keys())})
 FROM '{staging_path_s3}'
 IAM_ROLE '{config['redshift']['iam_role']}'
 FORMAT AS PARQUET
