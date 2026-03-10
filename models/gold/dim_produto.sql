@@ -31,6 +31,7 @@ WITH cdf_data AS (
         DESC_PRODUTO_PAI as ProdutoTipo,
         _change_type,
         _commit_version,
+        _commit_timestamp,
         ROW_NUMBER() OVER (PARTITION BY COD_PRODUTO ORDER BY _commit_version DESC) as rn
     FROM table_changes('delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_NOTAS_FISCAIS`', {{ last_version }})
     WHERE _change_type IN ('insert', 'update_postimage')
@@ -38,10 +39,10 @@ WITH cdf_data AS (
 )
 
 SELECT
-    ProdutoCodigo,
-    ProdutoDescricao,
-    ProdutoTipo,
-    current_timestamp() as data_atualizacao
+    COD_PRODUTO as ProdutoCodigo,
+    DESC_PRODUTO as ProdutoDescricao,
+    DESC_PRODUTO_PAI as ProdutoTipo,
+    _commit_timestamp as data_atualizacao
 FROM cdf_data
 WHERE rn = 1
 

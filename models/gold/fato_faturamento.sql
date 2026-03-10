@@ -49,6 +49,7 @@ WITH cdf_data AS (
         PESO_KG_SEMENTE as FaturamentoVolumeItemKG,
         _change_type,
         _commit_version,
+        _commit_timestamp,
         ROW_NUMBER() OVER (PARTITION BY CHAVE_NFE ORDER BY _commit_version DESC) as rn
     FROM table_changes('delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_NOTAS_FISCAIS`', {{ last_version }})
     WHERE _change_type IN ('insert', 'update_postimage')
@@ -77,7 +78,7 @@ SELECT
     FaturamentoLote,
     FaturamentoTratamento,
     FaturamentoVolumeItemKG,
-    current_timestamp() as data_atualizacao
+    _commit_timestamp as data_atualizacao
 FROM cdf_data
 WHERE rn = 1
 

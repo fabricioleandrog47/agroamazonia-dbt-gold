@@ -32,6 +32,7 @@ WITH cdf_data AS (
         END_COMPLETO as FilialEndereco,
         _change_type,
         _commit_version,
+        _commit_timestamp,
         ROW_NUMBER() OVER (PARTITION BY COD_FILIAL ORDER BY _commit_version DESC) as rn
     FROM table_changes('delta.`s3a://brid-silver/5037/DIM_FILIAL`', {{ last_version }})
     WHERE _change_type IN ('insert', 'update_postimage')
@@ -43,7 +44,7 @@ SELECT
     FilialDescricao,
     FilialCNPJ,
     FilialEndereco,
-    current_timestamp() as data_atualizacao
+    _commit_timestamp as data_atualizacao
 FROM cdf_data
 WHERE rn = 1
 

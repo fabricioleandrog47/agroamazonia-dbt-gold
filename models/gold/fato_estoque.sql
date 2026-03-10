@@ -32,6 +32,7 @@ WITH cdf_data AS (
         QTDE_SALDO_EMBALAGEM as EstoqueSaldo,
         _change_type,
         _commit_version,
+        _commit_timestamp,
         ROW_NUMBER() OVER (PARTITION BY COD_FILIAL, COD_PRODUTO, COD_FABRICANTE ORDER BY _commit_version DESC) as rn
     FROM table_changes('delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_ESTOQUE`', {{ last_version }})
     WHERE _change_type IN ('insert', 'update_postimage')
@@ -42,7 +43,7 @@ SELECT
     EstoqueProduto,
     EstoqueFabricante,
     EstoqueSaldo,
-    current_timestamp() as data_atualizacao
+    _commit_timestamp as data_atualizacao
 FROM cdf_data
 WHERE rn = 1
 

@@ -29,6 +29,7 @@ WITH cdf_data AS (
         LOTE_INTERNO as LoteNumero,
         _change_type,
         _commit_version,
+        _commit_timestamp,
         ROW_NUMBER() OVER (PARTITION BY LOTE_INTERNO ORDER BY _commit_version DESC) as rn
     FROM table_changes('delta.`s3a://brid-silver/5037/FATO_EDI_SYNGENTA_NOTAS_FISCAIS`', {{ last_version }})
     WHERE _change_type IN ('insert', 'update_postimage')
@@ -37,7 +38,7 @@ WITH cdf_data AS (
 
 SELECT
     LoteNumero,
-    current_timestamp() as data_atualizacao
+    _commit_timestamp as data_atualizacao
 FROM cdf_data
 WHERE rn = 1
 

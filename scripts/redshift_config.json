@@ -15,8 +15,8 @@
     {
       "name": "dim_cliente",
       "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/dim_cliente",
-      "redshift_schema": "gold_5037",
-      "redshift_table": "dim_cliente",
+      "redshift_schema": "5037",
+      "redshift_table": "cliente",
       "primary_keys": ["ClienteCPFCNPJ"],
       "incremental_column": "data_atualizacao",
       "columns": {
@@ -28,8 +28,8 @@
     {
       "name": "dim_vendedor",
       "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/dim_vendedor",
-      "redshift_schema": "gold_5037",
-      "redshift_table": "dim_vendedor",
+      "redshift_schema": "5037",
+      "redshift_table": "vendedor",
       "primary_keys": ["VendedorCodigo"],
       "incremental_column": "data_atualizacao",
       "columns": {
@@ -42,8 +42,8 @@
     {
       "name": "dim_produto",
       "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/dim_produto",
-      "redshift_schema": "gold_5037",
-      "redshift_table": "dim_produto",
+      "redshift_schema": "5037",
+      "redshift_table": "produto",
       "primary_keys": ["ProdutoCodigo"],
       "incremental_column": "data_atualizacao",
       "columns": {
@@ -56,8 +56,8 @@
     {
       "name": "dim_lote",
       "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/dim_lote",
-      "redshift_schema": "gold_5037",
-      "redshift_table": "dim_lote",
+      "redshift_schema": "5037",
+      "redshift_table": "lote",
       "primary_keys": ["LoteNumero"],
       "incremental_column": "data_atualizacao",
       "columns": {
@@ -68,8 +68,8 @@
     {
       "name": "dim_tratamento_semente",
       "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/dim_tratamento_semente",
-      "redshift_schema": "gold_5037",
-      "redshift_table": "dim_tratamento_semente",
+      "redshift_schema": "5037",
+      "redshift_table": "tratamento_semente",
       "primary_keys": ["TratamentoSementeCodigo"],
       "incremental_column": "data_atualizacao",
       "columns": {
@@ -80,8 +80,8 @@
     {
       "name": "dim_filial",
       "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/dim_filial",
-      "redshift_schema": "gold_5037",
-      "redshift_table": "dim_filial",
+      "redshift_schema": "5037",
+      "redshift_table": "filial",
       "primary_keys": ["FilialCodigo"],
       "incremental_column": "data_atualizacao",
       "columns": {
@@ -95,8 +95,8 @@
     {
       "name": "fato_faturamento",
       "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/fato_faturamento",
-      "redshift_schema": "gold_5037",
-      "redshift_table": "fato_faturamento",
+      "redshift_schema": "5037",
+      "redshift_table": "faturamento",
       "primary_keys": ["FaturamentoChaveNF"],
       "incremental_column": "data_atualizacao",
       "columns": {
@@ -127,8 +127,8 @@
     {
       "name": "fato_estoque",
       "gold_path": "s3a://brid-datawarehouse-spark/warehouse/5037/fato_estoque",
-      "redshift_schema": "gold_5037",
-      "redshift_table": "fato_estoque",
+      "redshift_schema": "5037",
+      "redshift_table": "estoque",
       "primary_keys": ["EstoqueFilial", "EstoqueProduto", "EstoqueFabricante"],
       "incremental_column": "data_atualizacao",
       "columns": {
