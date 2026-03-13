@@ -105,7 +105,7 @@ jobs:
                     'nodeSelector': {'role': 'spark'}
                 },
                 'sparkConf': {
-                    'spark.sql.warehouse.dir': 's3a://brid-datawarehouse-spark/warehouse/${{ secrets.CLIENTE_ID }}',
+                    'spark.sql.warehouse.dir': 's3a://brid-gold/${{ secrets.CLIENTE_ID }}',
                     'spark.kubernetes.file.upload.path': 'file:///tmp/spark-uploads',
                     'spark.sql.extensions': 'io.delta.sql.DeltaSparkSessionExtension',
                     'spark.sql.catalog.spark_catalog': 'org.apache.spark.sql.delta.catalog.DeltaCatalog',
